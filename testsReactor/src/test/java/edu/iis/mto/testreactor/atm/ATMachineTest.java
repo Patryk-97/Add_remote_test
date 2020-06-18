@@ -2,6 +2,7 @@ package edu.iis.mto.testreactor.atm;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,6 +63,19 @@ public class ATMachineTest {
         List<Banknote> expected = Arrays.asList(Banknote.PL_50, Banknote.PL_20);
         List<Banknote> actual = withdrawal.getBanknotes();
         assertThat(actual, is(expected));
+    }
+
+    @Test
+    public void withdrawShouldThrowATMOperationExceptionWhenAuthorizeFailed() throws ATMOperationException, AuthorizationException {
+        pinCode = PinCode.createPIN(1, 2, 3, 4);
+        card = Card.create("card1");
+        amount = new Money(70, Money.DEFAULT_CURRENCY);
+
+        Mockito.doThrow(AuthorizationException.class)
+               .when(bank)
+               .autorize(pinCode.getPIN(), card.getNumber());
+
+        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
     }
 
 }
