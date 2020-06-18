@@ -2,7 +2,7 @@ package edu.iis.mto.testreactor.atm;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,7 +77,12 @@ public class ATMachineTest {
                .when(bank)
                .autorize(pinCode.getPIN(), card.getNumber());
 
-        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
+        try {
+            atMachine.withdraw(pinCode, card, amount);
+        } catch (ATMOperationException e) {
+            assertTrue(e.getErrorCode()
+                        .equals(ErrorCode.AHTHORIZATION));
+        }
     }
 
     @Test
@@ -94,7 +99,12 @@ public class ATMachineTest {
         Mockito.when(bank.autorize(pinCode.getPIN(), card.getNumber()))
                .thenReturn(token);
 
-        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
+        try {
+            atMachine.withdraw(pinCode, card, amount);
+        } catch (ATMOperationException e) {
+            assertTrue(e.getErrorCode()
+                        .equals(ErrorCode.WRONG_AMOUNT));
+        }
     }
 
     @Test
@@ -119,7 +129,27 @@ public class ATMachineTest {
                .when(bank)
                .charge(Mockito.any(), Mockito.any());
 
-        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
+        try {
+            atMachine.withdraw(pinCode, card, amount);
+        } catch (ATMOperationException e) {
+            assertTrue(e.getErrorCode()
+                        .equals(ErrorCode.NO_FUNDS_ON_ACCOUNT));
+        }
+    }
+
+    @Test
+    public void withdrawShouldThrowATMOperationExceptionWhenWrongCurrency()
+            throws ATMOperationException, AuthorizationException, AccountException {
+        pinCode = PinCode.createPIN(1, 2, 3, 4);
+        card = Card.create("card1");
+        amount = new Money(70, Currency.getInstance("USD"));
+
+        try {
+            atMachine.withdraw(pinCode, card, amount);
+        } catch (ATMOperationException e) {
+            assertTrue(e.getErrorCode()
+                        .equals(ErrorCode.WRONG_CURRENCY));
+        }
     }
 
 }
