@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import edu.iis.mto.testreactor.atm.bank.AccountException;
 import edu.iis.mto.testreactor.atm.bank.AuthorizationException;
 import edu.iis.mto.testreactor.atm.bank.AuthorizationToken;
 import edu.iis.mto.testreactor.atm.bank.Bank;
@@ -92,6 +93,31 @@ public class ATMachineTest {
         AuthorizationToken token = AuthorizationToken.create("token");
         Mockito.when(bank.autorize(pinCode.getPIN(), card.getNumber()))
                .thenReturn(token);
+
+        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
+    }
+
+    @Test
+    public void withdrawShouldThrowATMOperationExceptionWhenBankTransactionFailed()
+            throws ATMOperationException, AuthorizationException, AccountException {
+        pinCode = PinCode.createPIN(1, 2, 3, 4);
+        card = Card.create("card1");
+        amount = new Money(70, Money.DEFAULT_CURRENCY);
+
+        List<BanknotesPack> banknotesPack = new ArrayList<>();
+        banknotesPack.add(BanknotesPack.create(3, Banknote.PL_50));
+        banknotesPack.add(BanknotesPack.create(2, Banknote.PL_20));
+        banknotesPack.add(BanknotesPack.create(4, Banknote.PL_10));
+        MoneyDeposit deposit = MoneyDeposit.create(currency, banknotesPack);
+        atMachine.setDeposit(deposit);
+
+        AuthorizationToken token = AuthorizationToken.create("token");
+        Mockito.when(bank.autorize(pinCode.getPIN(), card.getNumber()))
+               .thenReturn(token);
+
+        Mockito.doThrow(AccountException.class)
+               .when(bank)
+               .charge(Mockito.any(), Mockito.any());
 
         assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
     }
