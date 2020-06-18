@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Currency;
 import java.util.List;
 
@@ -74,6 +75,23 @@ public class ATMachineTest {
         Mockito.doThrow(AuthorizationException.class)
                .when(bank)
                .autorize(pinCode.getPIN(), card.getNumber());
+
+        assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
+    }
+
+    @Test
+    public void withdrawShouldThrowATMOperationExceptionWhenDepositEmpty() throws ATMOperationException, AuthorizationException {
+        pinCode = PinCode.createPIN(1, 2, 3, 4);
+        card = Card.create("card1");
+        amount = new Money(70, Money.DEFAULT_CURRENCY);
+
+        List<BanknotesPack> banknotesPack = Collections.emptyList();
+        MoneyDeposit deposit = MoneyDeposit.create(currency, banknotesPack);
+        atMachine.setDeposit(deposit);
+
+        AuthorizationToken token = AuthorizationToken.create("token");
+        Mockito.when(bank.autorize(pinCode.getPIN(), card.getNumber()))
+               .thenReturn(token);
 
         assertThrows(ATMOperationException.class, () -> atMachine.withdraw(pinCode, card, amount));
     }
